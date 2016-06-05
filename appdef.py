@@ -44,4 +44,4 @@ def read_appdef(path):
 				application.modules.append(parsed_module)
 	return application
 
-read_appdef("service_definition.yml")
+read_appdef("service_definition.json")
