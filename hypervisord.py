@@ -62,8 +62,8 @@ class Module:
 
 	def spawn(self):
 		self.allocate_socket()
-		module_dir = os.path.dirname(self.module_path)
-		self.process = subprocess.Popen([self.module_path, self.module_local_socket], cwd=module_dir)
+		module_dir = os.path.dirname(self.path)
+		self.process = subprocess.Popen([self.path, self.module_local_socket], cwd=module_dir)
 		if poll_path(self.module_local_socket):
 			self.send_config()
 			self.start_module()
@@ -72,14 +72,21 @@ class Module:
 			self.process.kill()
 		module_pool.add(self)
 
-	def __init__(self):
+	def __init__(self, path, parameters=None, host=None, alias="", keep_alive=True, connections=None):
 		super().__init__()
 		# each modules must be packaged within a directory, directly in which the executable resides
 		# this path specifies the path to the executable, its parent directory is considered the module directory
 		# this is used for copying between hosts, and working directory of the process spawned for the mdoule
-		self.module_path = ""
-		self.module_config = []
+		self.path = path
+		self.alias = alias
+		self.host = host
+		if parameters is None:
+			parameters = []
+		self.parameters = parameters
+		if connections is None:
+			connections = {}
+		self.connections = connections
 		self.module_local_socket = ""
 		self.process = None
-		self.keep_alive = True
+		self.keep_alive = keep_alive
 

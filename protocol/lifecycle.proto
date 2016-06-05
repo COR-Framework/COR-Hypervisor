@@ -1,6 +1,6 @@
 syntax = "proto2";
 
-message ModuleConfig{
+message ModuleParameters{
     repeated Parameter parameters = 1;
 }
 
@@ -21,7 +21,7 @@ message ModuleRecover{
 
 }
 
-message Connect{
+message Connection{
     required string type = 1;
     required string corurl = 2;
 }

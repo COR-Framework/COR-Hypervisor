@@ -5,7 +5,7 @@ modules:
    instances:
    - alias: module1_1
      host: 192.168.1.2
-     config: {argument1: "test", argument2: "1234"}
+     parameters: {argument1: "test", argument2: "1234"}
      connections: [
      {type: request, to: module1_2},
      {type: hello, to: module2_1}
@@ -20,10 +20,10 @@ modules:
 
  - path: /somewhere/module2.py
    keep_alive: true
-    instances:
+   instances:
     - alias: module2_1
       host: 192.168.1.3
-      config: {argument1: "test", argument2: "1234"}
+      parameters: {argument1: "test", argument2: "1234"}
       "connections": [
             {type: request, to: module1_2},
             {type: hello, to: module2_1}

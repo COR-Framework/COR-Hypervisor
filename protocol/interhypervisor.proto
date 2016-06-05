@@ -1,0 +1,15 @@
+import lifecycle;
+
+message Module {
+    	required string path = 1;
+		optional string alias = 2;
+		optional string host = 3;
+		repeated Parameter parameters = 4;
+		repeated Connection connections = 5;
+		optional bool keep_alive = 6;
+		optional bytes module_code = 7;
+}
+
+message PingPong {
+
+}
