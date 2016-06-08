@@ -1,6 +1,7 @@
 name: TestApp
 modules:
  - path: requestor/requestor.py
+   executor: python3
    keep_alive: true
    instances:
    - alias: requestor
@@ -9,6 +10,7 @@ modules:
      ]
 
  - path: responder/responder.py
+   executor: python3
    keep_alive: true
    instances:
     - alias: responder

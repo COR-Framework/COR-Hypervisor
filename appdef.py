@@ -1,5 +1,6 @@
 import yaml
 import hypervisord
+import os
 
 # ----- util funcs -----
 
@@ -39,18 +40,21 @@ class Application:
 				return module.host
 		return None
 
-	def __init__(self, name):
+	def __init__(self, name, path):
 		super().__init__()
 		self.name = name
+		self.path = path
 		self.modules = []
 
 
 def read_appdef(path):
 	with open(path, 'r') as ymlfile:
 		appdef = yaml.load(ymlfile, yaml.Loader)
-		application = Application(get_or_error(appdef, "name"))
+		application_path = os.path.dirname(path)
+		application = Application(get_or_error(appdef, "name"), application_path)
 		for module in get_or_error(appdef, "modules"):
 			module_path = get_or_error(module, "path")
+			executor = get_or_error(module, "executor")
 			keep_alive = get_or_default(module, "keep_alive", True)
 			for instance in get_or_error(module, "instances"):
 				host_constraint = get_or_default(instance, "host_constraint", None)
@@ -62,7 +66,7 @@ def read_appdef(path):
 					conn_type = get_or_error(connection, "type")
 					conn_to = get_or_error(connection, "to")
 					real_cons.append(hypervisord.ModuleInstance.Connection(conn_type, conn_to))
-				parsed_module = hypervisord.ModuleInstance(module_path, keep_alive=keep_alive, host_constraint=host_constraint, parameters=parameters, alias=alias, connections=real_cons)
+				parsed_module = hypervisord.ModuleInstance(application, executor, module_path, keep_alive=keep_alive, host_constraint=host_constraint, parameters=parameters, alias=alias, connections=real_cons)
 				application.modules.append(parsed_module)
 	return application
 
@@ -72,4 +76,4 @@ application = read_appdef("test_app/test_app.yml")
 application.resolve_hosts()
 
 for module in application.modules:
-	print(module.host)
+	module.spawn()

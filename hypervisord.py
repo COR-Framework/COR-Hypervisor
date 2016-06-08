@@ -8,7 +8,12 @@ import network
 module_pool = set()
 
 supervisor_dir = "/var/cor/"
+if not os.path.exists(supervisor_dir):
+	os.mkdir(supervisor_dir)
+
 sockets_dir = supervisor_dir + "sockets/"
+if not os.path.exists(sockets_dir):
+	os.mkdir(sockets_dir)
 
 # ----- util functions ------
 
@@ -90,8 +95,9 @@ class ModuleInstance:
 
 	def spawn(self):
 		self.allocate_sockets()
-		module_dir = os.path.dirname(self.path)
-		self.process = subprocess.Popen([self.path, self.module_local_socket], cwd=module_dir)
+		module_dir = os.path.abspath(self.application.path + "/" + os.path.dirname(self.executable_path))
+		executable_path = os.path.abspath(self.application.path + "/" + self.executable_path)
+		self.process = subprocess.Popen([self.executor, executable_path, self.module_local_socket, self.bind_url], cwd=module_dir)
 		if poll_path(self.module_local_socket):
 			self.send_config()
 			self.start_module()
@@ -100,12 +106,14 @@ class ModuleInstance:
 			self.process.kill()
 		module_pool.add(self)
 
-	def __init__(self, path, parameters=None, host_constraint=None, alias="", keep_alive=True, connections=None):
+	def __init__(self, application, executor, executable_path, parameters=None, host_constraint=None, alias="", keep_alive=True, connections=None):
 		super().__init__()
 		# each modules must be packaged within a directory, directly in which the executable resides
 		# this path specifies the path to the executable, its parent directory is considered the module directory
 		# this is used for copying between hosts, and working directory of the process spawned for the mdoule
-		self.path = path
+		self.executable_path = executable_path
+		self.application = application
+		self.executor = executor
 		self.alias = alias
 		self.host_constraint = host_constraint
 		self.host = None

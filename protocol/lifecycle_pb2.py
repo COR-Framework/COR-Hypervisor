@@ -18,22 +18,23 @@ _sym_db = _symbol_database.Default()
 DESCRIPTOR = _descriptor.FileDescriptor(
   name='lifecycle.proto',
   package='',
-  serialized_pb=_b('\n\x0flifecycle.proto\".\n\x0cModuleConfig\x12\x1e\n\nparameters\x18\x01 \x03(\x0b\x32\n.Parameter\"(\n\tParameter\x12\x0c\n\x04name\x18\x01 \x02(\t\x12\r\n\x05value\x18\x02 \x02(\t\"\r\n\x0bModuleStart\"\x0c\n\nModuleStop\"\x0f\n\rModuleRecover\"\'\n\x07\x43onnect\x12\x0c\n\x04type\x18\x01 \x02(\t\x12\x0e\n\x06\x63orurl\x18\x02 \x02(\t')
+  syntax='proto2',
+  serialized_pb=_b('\n\x0flifecycle.proto\"2\n\x10ModuleParameters\x12\x1e\n\nparameters\x18\x01 \x03(\x0b\x32\n.Parameter\"(\n\tParameter\x12\x0c\n\x04name\x18\x01 \x02(\t\x12\r\n\x05value\x18\x02 \x02(\t\"\r\n\x0bModuleStart\"\x0c\n\nModuleStop\"\x0f\n\rModuleRecover\"*\n\nConnection\x12\x0c\n\x04type\x18\x01 \x02(\t\x12\x0e\n\x06\x63orurl\x18\x02 \x02(\t')
 )
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
 
 
 
-_MODULECONFIG = _descriptor.Descriptor(
-  name='ModuleConfig',
-  full_name='ModuleConfig',
+_MODULEPARAMETERS = _descriptor.Descriptor(
+  name='ModuleParameters',
+  full_name='ModuleParameters',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='parameters', full_name='ModuleConfig.parameters', index=0,
+      name='parameters', full_name='ModuleParameters.parameters', index=0,
       number=1, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
@@ -47,11 +48,12 @@ _MODULECONFIG = _descriptor.Descriptor(
   ],
   options=None,
   is_extendable=False,
+  syntax='proto2',
   extension_ranges=[],
   oneofs=[
   ],
   serialized_start=19,
-  serialized_end=65,
+  serialized_end=69,
 )
 
 
@@ -84,11 +86,12 @@ _PARAMETER = _descriptor.Descriptor(
   ],
   options=None,
   is_extendable=False,
+  syntax='proto2',
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=67,
-  serialized_end=107,
+  serialized_start=71,
+  serialized_end=111,
 )
 
 
@@ -107,11 +110,12 @@ _MODULESTART = _descriptor.Descriptor(
   ],
   options=None,
   is_extendable=False,
+  syntax='proto2',
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=109,
-  serialized_end=122,
+  serialized_start=113,
+  serialized_end=126,
 )
 
 
@@ -130,11 +134,12 @@ _MODULESTOP = _descriptor.Descriptor(
   ],
   options=None,
   is_extendable=False,
+  syntax='proto2',
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=124,
-  serialized_end=136,
+  serialized_start=128,
+  serialized_end=140,
 )
 
 
@@ -153,30 +158,31 @@ _MODULERECOVER = _descriptor.Descriptor(
   ],
   options=None,
   is_extendable=False,
+  syntax='proto2',
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=138,
-  serialized_end=153,
+  serialized_start=142,
+  serialized_end=157,
 )
 
 
-_CONNECT = _descriptor.Descriptor(
-  name='Connect',
-  full_name='Connect',
+_CONNECTION = _descriptor.Descriptor(
+  name='Connection',
+  full_name='Connection',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='type', full_name='Connect.type', index=0,
+      name='type', full_name='Connection.type', index=0,
       number=1, type=9, cpp_type=9, label=2,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='corurl', full_name='Connect.corurl', index=1,
+      name='corurl', full_name='Connection.corurl', index=1,
       number=2, type=9, cpp_type=9, label=2,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
@@ -190,27 +196,28 @@ _CONNECT = _descriptor.Descriptor(
   ],
   options=None,
   is_extendable=False,
+  syntax='proto2',
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=155,
-  serialized_end=194,
+  serialized_start=159,
+  serialized_end=201,
 )
 
-_MODULECONFIG.fields_by_name['parameters'].message_type = _PARAMETER
-DESCRIPTOR.message_types_by_name['ModuleConfig'] = _MODULECONFIG
+_MODULEPARAMETERS.fields_by_name['parameters'].message_type = _PARAMETER
+DESCRIPTOR.message_types_by_name['ModuleParameters'] = _MODULEPARAMETERS
 DESCRIPTOR.message_types_by_name['Parameter'] = _PARAMETER
 DESCRIPTOR.message_types_by_name['ModuleStart'] = _MODULESTART
 DESCRIPTOR.message_types_by_name['ModuleStop'] = _MODULESTOP
 DESCRIPTOR.message_types_by_name['ModuleRecover'] = _MODULERECOVER
-DESCRIPTOR.message_types_by_name['Connect'] = _CONNECT
+DESCRIPTOR.message_types_by_name['Connection'] = _CONNECTION
 
-ModuleConfig = _reflection.GeneratedProtocolMessageType('ModuleConfig', (_message.Message,), dict(
-  DESCRIPTOR = _MODULECONFIG,
+ModuleParameters = _reflection.GeneratedProtocolMessageType('ModuleParameters', (_message.Message,), dict(
+  DESCRIPTOR = _MODULEPARAMETERS,
   __module__ = 'lifecycle_pb2'
-  # @@protoc_insertion_point(class_scope:ModuleConfig)
+  # @@protoc_insertion_point(class_scope:ModuleParameters)
   ))
-_sym_db.RegisterMessage(ModuleConfig)
+_sym_db.RegisterMessage(ModuleParameters)
 
 Parameter = _reflection.GeneratedProtocolMessageType('Parameter', (_message.Message,), dict(
   DESCRIPTOR = _PARAMETER,
@@ -240,12 +247,12 @@ ModuleRecover = _reflection.GeneratedProtocolMessageType('ModuleRecover', (_mess
   ))
 _sym_db.RegisterMessage(ModuleRecover)
 
-Connect = _reflection.GeneratedProtocolMessageType('Connect', (_message.Message,), dict(
-  DESCRIPTOR = _CONNECT,
+Connection = _reflection.GeneratedProtocolMessageType('Connection', (_message.Message,), dict(
+  DESCRIPTOR = _CONNECTION,
   __module__ = 'lifecycle_pb2'
-  # @@protoc_insertion_point(class_scope:Connect)
+  # @@protoc_insertion_point(class_scope:Connection)
   ))
-_sym_db.RegisterMessage(Connect)
+_sym_db.RegisterMessage(Connection)
 
 
 # @@protoc_insertion_point(module_scope)
