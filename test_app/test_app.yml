@@ -6,7 +6,7 @@ modules:
    instances:
    - alias: requestor
      connections: [
-     {type: request, to: responder},
+     {type: Request, to: responder},
      ]
 
  - path: responder/responder.py
@@ -15,5 +15,5 @@ modules:
    instances:
     - alias: responder
       "connections": [
-      {type: response, to: requestor},
+      {type: Response, to: requestor},
       ]

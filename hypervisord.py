@@ -85,7 +85,8 @@ class ModuleInstance:
 
 	def allocate_sockets(self):
 		self.module_local_socket = rand_socket()
-		self.bind_url = "0.0.0.0:" + str(rand_free_port())
+		self.bind_port = rand_free_port()
+		self.bind_url = "0.0.0.0:" + str(self.bind_port)
 
 	def respawn(self, hypervisor_network):
 		pass
@@ -96,6 +97,16 @@ class ModuleInstance:
 	def start_module(self, hypervisor_network):
 		start_message = lifecycle.ModuleStart()
 		hypervisor_network.direct_message(start_message, "sock://" + self.module_local_socket)
+
+	def send_connections(self, hypervisor_network):
+		for connection in self.connections:
+			real_connection = self.application.resolve_connection(connection.to)
+			if real_connection is None:
+				raise Exception("Unresolved connection " + connection.to)
+			connection_message = lifecycle.Connection()
+			connection_message.type = connection.type
+			connection_message.corurl = real_connection
+			hypervisor_network.direct_message(connection_message, "sock://" + self.module_local_socket)
 
 	def stop_module(self):
 		self.process.kill()
@@ -108,7 +119,6 @@ class ModuleInstance:
 		if poll_path(self.module_local_socket):
 			hypervisor_network.network_adapter._connect("sock://" + self.module_local_socket) # TODO name socket properly instead of this
 			self.send_config(hypervisor_network)
-			self.start_module(hypervisor_network)
 		else:
 			print("MODULE KILLED: Module did not create communication socket, make sure it supports being supervised")
 			self.process.kill()
@@ -133,6 +143,7 @@ class ModuleInstance:
 		self.connections = connections
 		self.module_local_socket = ""
 		self.bind_url = ""
+		self.bind_port = 0
 		self.process = None
 		self.keep_alive = keep_alive
 
@@ -146,6 +157,10 @@ if __name__ == "__main__":
 
 	for module in application.modules:
 		module.spawn_module(hypervisor_network)
+	for module in application.modules:
+		module.send_connections(hypervisor_network)
+	for module in application.modules:
+		module.start_module(hypervisor_network)
 
 	while True:
 		time.sleep(1)

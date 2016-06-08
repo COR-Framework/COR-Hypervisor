@@ -38,7 +38,7 @@ class Application:
 	def resolve_connection(self, to):
 		for module in self.modules:
 			if module.alias == to:
-				return module.host
+				return "tcp://{}:{}".format(module.host.host_name, module.bind_port)
 		return None
 
 	def __init__(self, name, path):
