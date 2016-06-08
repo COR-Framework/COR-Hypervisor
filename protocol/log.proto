@@ -1,0 +1,6 @@
+syntax = "proto2";
+
+message Log {
+    required string level = 1;
+    required string text = 2;
+}

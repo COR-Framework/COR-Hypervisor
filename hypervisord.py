@@ -5,6 +5,7 @@ import os
 import time
 import network
 import appdef
+import threading
 import protocol.lifecycle_pb2 as lifecycle
 
 module_pool = set()
@@ -64,14 +65,16 @@ class Manager:
 		Manager.manager_pool.append(self)
 
 
-def monitor_thread():
-	for module in module_pool:
-		if module.process.poll() is not None:
-			if module.keep_alive:
-				module.respawn()
-			else:
-				print("Module {} finished with exit code {}".format(module.module_path, module.process.return_code))
-				module_pool.remove(module)
+def monitor_thread(mpool):
+	print(mpool)
+	while len(mpool) > 0:
+		for module in mpool:
+			if module.process.poll() is not None:
+				if module.keep_alive:
+					module.respawn()
+				else:
+					print("Module {} finished with exit code {}".format(module.module_path, module.process.return_code))
+					mpool.remove(module)
 
 
 class ModuleInstance:
@@ -151,7 +154,6 @@ class ModuleInstance:
 if __name__ == "__main__":
 	hypervisor_network = network.HypervisorNetwork(supervisor_dir + "hypervisor.socket", "0.0.0.0:6090")
 	manager = Manager("localhost")
-	print(Manager.get_manager())
 	application = appdef.read_appdef("test_app/test_app.yml")
 	application.resolve_hosts(manager)
 
@@ -162,5 +164,8 @@ if __name__ == "__main__":
 	for module in application.modules:
 		module.start_module(hypervisor_network)
 
-	while True:
-		time.sleep(1)
+	print("starting monitor thread")
+	mthread = threading.Thread(target=monitor_thread, args=[module_pool])
+	mthread.start()
+
+	mthread.join()
