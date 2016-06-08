@@ -1,3 +1,4 @@
+import time
 import yaml
 import hypervisord
 import os
@@ -23,12 +24,12 @@ def get_or_default(dict, key, default):
 
 class Application:
 
-	def resolve_hosts(self):
+	def resolve_hosts(self, localmanager):
 		for module_instance in self.modules:
 			if module_instance.host_constraint is None:
-				module_instance.host = hypervisord.Manager.manager_pool[0]
+				module_instance.host = localmanager
 			else:
-				manager_from_pool = hypervisord.Manager.in_pool(module_instance.host_constraint)
+				manager_from_pool = localmanager.in_pool(module_instance.host_constraint)
 				if manager_from_pool is not None:
 					module_instance.host = manager_from_pool
 				else:
@@ -69,11 +70,3 @@ def read_appdef(path):
 				parsed_module = hypervisord.ModuleInstance(application, executor, module_path, keep_alive=keep_alive, host_constraint=host_constraint, parameters=parameters, alias=alias, connections=real_cons)
 				application.modules.append(parsed_module)
 	return application
-
-
-hypervisord.Manager("localhost")
-application = read_appdef("test_app/test_app.yml")
-application.resolve_hosts()
-
-for module in application.modules:
-	module.spawn()

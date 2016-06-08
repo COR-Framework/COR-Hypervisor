@@ -4,6 +4,8 @@ import string
 import os
 import time
 import network
+import appdef
+import protocol.lifecycle_pb2 as lifecycle
 
 module_pool = set()
 
@@ -30,7 +32,7 @@ def rand_free_port():
 	return random.randrange(1024, 65535)
 
 
-def poll_path(path, timeout=30):
+def poll_path(path, timeout=10):
 	while not os.path.exists(path) and timeout > 0:
 		time.sleep(0.1)
 		timeout -= 0.1
@@ -51,6 +53,10 @@ class Manager:
 			if manager.host_name == host_name:
 				return manager
 		return None
+
+	@staticmethod
+	def get_manager():
+		return Manager.manager_pool[0]
 
 	def __init__(self, host_name):
 		super().__init__()
@@ -81,26 +87,28 @@ class ModuleInstance:
 		self.module_local_socket = rand_socket()
 		self.bind_url = "0.0.0.0:" + str(rand_free_port())
 
-	def respawn(self):
+	def respawn(self, hypervisor_network):
 		pass
 
-	def send_config(self):
+	def send_config(self, hypervisor_network):
 		pass
 
-	def start_module(self):
-		pass
+	def start_module(self, hypervisor_network):
+		start_message = lifecycle.ModuleStart()
+		hypervisor_network.direct_message(start_message, "sock://" + self.module_local_socket)
 
-	def stop(self):
+	def stop_module(self):
 		self.process.kill()
 
-	def spawn(self):
+	def spawn_module(self, hypervisor_network):
 		self.allocate_sockets()
 		module_dir = os.path.abspath(self.application.path + "/" + os.path.dirname(self.executable_path))
 		executable_path = os.path.abspath(self.application.path + "/" + self.executable_path)
 		self.process = subprocess.Popen([self.executor, executable_path, self.module_local_socket, self.bind_url], cwd=module_dir)
 		if poll_path(self.module_local_socket):
-			self.send_config()
-			self.start_module()
+			hypervisor_network.network_adapter._connect("sock://" + self.module_local_socket) # TODO name socket properly instead of this
+			self.send_config(hypervisor_network)
+			self.start_module(hypervisor_network)
 		else:
 			print("MODULE KILLED: Module did not create communication socket, make sure it supports being supervised")
 			self.process.kill()
@@ -130,5 +138,14 @@ class ModuleInstance:
 
 
 if __name__ == "__main__":
-	# net_module = network.HypervisorNetwork(supervisor_dir + "hypervisor.socket", "0.0.0.0:6090")
-	pass
+	hypervisor_network = network.HypervisorNetwork(supervisor_dir + "hypervisor.socket", "0.0.0.0:6090")
+	manager = Manager("localhost")
+	print(Manager.get_manager())
+	application = appdef.read_appdef("test_app/test_app.yml")
+	application.resolve_hosts(manager)
+
+	for module in application.modules:
+		module.spawn_module(hypervisor_network)
+
+	while True:
+		time.sleep(1)

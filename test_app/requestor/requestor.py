@@ -18,6 +18,7 @@ class Requestor(cor.api.CORModule):
 		print("Response received")
 
 	def on_start(self, message):
+		print("Received a start message")
 		self.requestor_thread.start()
 
 	def __init__(self, local_socket, bind_url):
