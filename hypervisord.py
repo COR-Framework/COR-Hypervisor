@@ -3,9 +3,9 @@ import random
 import string
 import os
 import time
+import network
 
 module_pool = set()
-allocated_sockets = set([None])
 
 supervisor_dir = "/var/cor/"
 sockets_dir = supervisor_dir + "sockets/"
@@ -13,8 +13,16 @@ sockets_dir = supervisor_dir + "sockets/"
 # ----- util functions ------
 
 
-def rand_string(n):
-	return ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(n))
+def rand_socket():
+	sock = sockets_dir + ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(12)) + ".sock"
+	while os.path.exists(sock):
+		sock = sockets_dir + ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(12)) + ".sock"
+	return sock
+
+
+def rand_free_port():
+	# TODO do proper checking if the port is occupied
+	return random.randrange(1024, 65535)
 
 
 def poll_path(path, timeout=30):
@@ -29,6 +37,22 @@ def poll_path(path, timeout=30):
 # ----- supervisor code -----
 
 
+class Manager:
+	manager_pool = []
+
+	@staticmethod
+	def in_pool(host_name):
+		for manager in Manager.manager_pool:
+			if manager.host_name == host_name:
+				return manager
+		return None
+
+	def __init__(self, host_name):
+		super().__init__()
+		self.host_name = host_name
+		Manager.manager_pool.append(self)
+
+
 def monitor_thread():
 	for module in module_pool:
 		if module.process.poll() is not None:
@@ -39,14 +63,18 @@ def monitor_thread():
 				module_pool.remove(module)
 
 
-class Module:
+class ModuleInstance:
 
-	def allocate_socket(self):
-		sock = None
-		while sock in allocated_sockets:
-			sock = sockets_dir + rand_string(12) + ".sock"
-		allocated_sockets.add(sock)
-		self.module_local_socket = sock
+	class Connection:
+
+		def __init__(self, type, to):
+			super().__init__()
+			self.type = type
+			self.to = to
+
+	def allocate_sockets(self):
+		self.module_local_socket = rand_socket()
+		self.bind_url = "0.0.0.0:" + str(rand_free_port())
 
 	def respawn(self):
 		pass
@@ -61,7 +89,7 @@ class Module:
 		self.process.kill()
 
 	def spawn(self):
-		self.allocate_socket()
+		self.allocate_sockets()
 		module_dir = os.path.dirname(self.path)
 		self.process = subprocess.Popen([self.path, self.module_local_socket], cwd=module_dir)
 		if poll_path(self.module_local_socket):
@@ -72,21 +100,27 @@ class Module:
 			self.process.kill()
 		module_pool.add(self)
 
-	def __init__(self, path, parameters=None, host=None, alias="", keep_alive=True, connections=None):
+	def __init__(self, path, parameters=None, host_constraint=None, alias="", keep_alive=True, connections=None):
 		super().__init__()
 		# each modules must be packaged within a directory, directly in which the executable resides
 		# this path specifies the path to the executable, its parent directory is considered the module directory
 		# this is used for copying between hosts, and working directory of the process spawned for the mdoule
 		self.path = path
 		self.alias = alias
-		self.host = host
+		self.host_constraint = host_constraint
+		self.host = None
 		if parameters is None:
 			parameters = []
 		self.parameters = parameters
 		if connections is None:
-			connections = {}
+			connections = []
 		self.connections = connections
 		self.module_local_socket = ""
+		self.bind_url = ""
 		self.process = None
 		self.keep_alive = keep_alive
 
+
+if __name__ == "__main__":
+	# net_module = network.HypervisorNetwork(supervisor_dir + "hypervisor.socket", "0.0.0.0:6090")
+	pass

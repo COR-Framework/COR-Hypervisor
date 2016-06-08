@@ -1,0 +1,17 @@
+name: TestApp
+modules:
+ - path: requestor/requestor.py
+   keep_alive: true
+   instances:
+   - alias: requestor
+     connections: [
+     {type: request, to: responder},
+     ]
+
+ - path: responder/responder.py
+   keep_alive: true
+   instances:
+    - alias: responder
+      "connections": [
+      {type: response, to: requestor},
+      ]

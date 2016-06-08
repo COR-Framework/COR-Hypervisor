@@ -22,6 +22,23 @@ def get_or_default(dict, key, default):
 
 class Application:
 
+	def resolve_hosts(self):
+		for module_instance in self.modules:
+			if module_instance.host_constraint is None:
+				module_instance.host = hypervisord.Manager.manager_pool[0]
+			else:
+				manager_from_pool = hypervisord.Manager.in_pool(module_instance.host_constraint)
+				if manager_from_pool is not None:
+					module_instance.host = manager_from_pool
+				else:
+					raise Exception("Manager {} does not belong to this COR-Pool".format(module_instance.host_constraint))
+
+	def resolve_connection(self, to):
+		for module in self.modules:
+			if module.alias == to:
+				return module.host
+		return None
+
 	def __init__(self, name):
 		super().__init__()
 		self.name = name
@@ -36,12 +53,23 @@ def read_appdef(path):
 			module_path = get_or_error(module, "path")
 			keep_alive = get_or_default(module, "keep_alive", True)
 			for instance in get_or_error(module, "instances"):
-				host = get_or_default(instance, "host", None)
+				host_constraint = get_or_default(instance, "host_constraint", None)
 				parameters = get_or_default(instance, "parameters", {})
-				alias = get_or_default(instance, "alias", "")
+				alias = get_or_error(instance, "alias")
 				connections = get_or_default(instance, "connections", [])
-				parsed_module = hypervisord.Module(module_path, keep_alive=keep_alive, host=host, parameters=parameters, alias=alias, connections=connections)
+				real_cons = []
+				for connection in connections:
+					conn_type = get_or_error(connection, "type")
+					conn_to = get_or_error(connection, "to")
+					real_cons.append(hypervisord.ModuleInstance.Connection(conn_type, conn_to))
+				parsed_module = hypervisord.ModuleInstance(module_path, keep_alive=keep_alive, host_constraint=host_constraint, parameters=parameters, alias=alias, connections=real_cons)
 				application.modules.append(parsed_module)
 	return application
 
-read_appdef("service_definition.json")
+
+hypervisord.Manager("localhost")
+application = read_appdef("test_app/test_app.yml")
+application.resolve_hosts()
+
+for module in application.modules:
+	print(module.host)
