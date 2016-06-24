@@ -8,7 +8,7 @@ class Responder(cor.api.CORModule):
 
 	def on_request(self, message):
 		if self.request_count == 5:
-			raise Exception("died")
+			os._exit(-1)
 		print("Request received")
 		response = request_response.Response()
 		response.message = "hello"
