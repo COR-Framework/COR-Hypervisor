@@ -3,14 +3,13 @@ import random
 import string
 import os
 import time
-import network
 import appdef
 import threading
+import click
+import cor.api
 import protocol.lifecycle_pb2 as lifecycle
 
-module_pool = set()
-
-supervisor_dir = "/var/cor/"
+supervisor_dir = click.get_app_dir("cor", force_posix=True) + "/"
 if not os.path.exists(supervisor_dir):
 	os.mkdir(supervisor_dir)
 
@@ -45,7 +44,7 @@ def poll_path(path, timeout=10):
 # ----- supervisor code -----
 
 
-class Manager:
+class Manager(cor.api.CORModule):
 	manager_pool = []
 
 	@staticmethod
@@ -59,22 +58,30 @@ class Manager:
 	def get_manager():
 		return Manager.manager_pool[0]
 
-	def __init__(self, host_name):
-		super().__init__()
+	def on_ping_received(self, message):
+		pass
+
+	def handle_appdef(self, message):
+		pass
+
+	def monitor_thread(self):
+		while True:
+			time.sleep(1)
+			for module in self.module_pool:
+				if module.process.poll() is not None:
+					if module.keep_alive:
+						module.respawn(self)
+					else:
+						print("Module {} finished with exit code {}".format(module.module_path, module.process.returncode))
+						self.module_pool.remove(module)
+
+	def __init__(self, host_name, local_socket, bind_url):
+		super().__init__(local_socket, bind_url)
 		self.host_name = host_name
+		self.module_pool = set()
+		mthread = threading.Thread(target=self.monitor_thread)
+		mthread.start()
 		Manager.manager_pool.append(self)
-
-
-def monitor_thread(mpool):
-	print(mpool)
-	while len(mpool) > 0:
-		for module in mpool:
-			if module.process.poll() is not None:
-				if module.keep_alive:
-					module.respawn()
-				else:
-					print("Module {} finished with exit code {}".format(module.module_path, module.process.return_code))
-					mpool.remove(module)
 
 
 class ModuleInstance:
@@ -91,17 +98,21 @@ class ModuleInstance:
 		self.bind_port = rand_free_port()
 		self.bind_url = "0.0.0.0:" + str(self.bind_port)
 
-	def respawn(self, hypervisor_network):
+	def respawn(self, hypervisor):
+		# TODO send module a propper mesage here
+		print("Respawning")
+		self.spawn_module(hypervisor, first=False)
+		self.send_connections(hypervisor)
+		self.start_module(hypervisor)
+
+	def send_config(self, hypervisor):
 		pass
 
-	def send_config(self, hypervisor_network):
-		pass
-
-	def start_module(self, hypervisor_network):
+	def start_module(self, hypervisor):
 		start_message = lifecycle.ModuleStart()
-		hypervisor_network.direct_message(start_message, "sock://" + self.module_local_socket)
+		hypervisor.direct_message(start_message, "sock://" + self.module_local_socket)
 
-	def send_connections(self, hypervisor_network):
+	def send_connections(self, hypervisor):
 		for connection in self.connections:
 			real_connection = self.application.resolve_connection(connection.to)
 			if real_connection is None:
@@ -109,23 +120,25 @@ class ModuleInstance:
 			connection_message = lifecycle.Connection()
 			connection_message.type = connection.type
 			connection_message.corurl = real_connection
-			hypervisor_network.direct_message(connection_message, "sock://" + self.module_local_socket)
+			hypervisor.direct_message(connection_message, "sock://" + self.module_local_socket)
 
 	def stop_module(self):
 		self.process.kill()
 
-	def spawn_module(self, hypervisor_network):
-		self.allocate_sockets()
+	def spawn_module(self, hypervisor, first=True):
+		if first:
+			self.allocate_sockets()
 		module_dir = os.path.abspath(self.application.path + "/" + os.path.dirname(self.executable_path))
 		executable_path = os.path.abspath(self.application.path + "/" + self.executable_path)
 		self.process = subprocess.Popen([self.executor, executable_path, self.module_local_socket, self.bind_url], cwd=module_dir)
 		if poll_path(self.module_local_socket):
-			hypervisor_network.network_adapter._connect("sock://" + self.module_local_socket) # TODO name socket properly instead of this
-			self.send_config(hypervisor_network)
+			hypervisor.network_adapter._connect("sock://" + self.module_local_socket)
+			self.send_config(hypervisor)
 		else:
 			print("MODULE KILLED: Module did not create communication socket, make sure it supports being supervised")
 			self.process.kill()
-		module_pool.add(self)
+		if first:
+			hypervisor.module_pool.add(self)
 
 	def __init__(self, application, executor, executable_path, parameters=None, host_constraint=None, alias="", keep_alive=True, connections=None):
 		super().__init__()
@@ -152,20 +165,14 @@ class ModuleInstance:
 
 
 if __name__ == "__main__":
-	hypervisor_network = network.HypervisorNetwork(supervisor_dir + "hypervisor.socket", "0.0.0.0:6090")
-	manager = Manager("localhost")
+	manager = Manager("localhost", supervisor_dir + "hypervisor.socket", "0.0.0.0:6090")
 	application = appdef.read_appdef("test_app/test_app.yml")
 	application.resolve_hosts(manager)
 
 	for module in application.modules:
-		module.spawn_module(hypervisor_network)
+		module.spawn_module(manager)
 	for module in application.modules:
-		module.send_connections(hypervisor_network)
+		module.send_connections(manager)
 	for module in application.modules:
-		module.start_module(hypervisor_network)
+		module.start_module(manager)
 
-	print("starting monitor thread")
-	mthread = threading.Thread(target=monitor_thread, args=[module_pool])
-	mthread.start()
-
-	mthread.join()
